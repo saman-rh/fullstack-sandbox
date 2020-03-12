@@ -6,32 +6,44 @@ import ListItem from '@material-ui/core/ListItem'
 import ListItemText from '@material-ui/core/ListItemText'
 import ListItemIcon from '@material-ui/core/ListItemIcon'
 import ReceiptIcon from '@material-ui/icons/Receipt'
+import DoneAllIcon from '@material-ui/icons/DoneAll'
 import Typography from '@material-ui/core/Typography'
 import { ToDoListForm } from './ToDoListForm'
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
-
-const getPersonalTodos = () => {
-  return sleep(1000).then(() => Promise.resolve({
-    '0000000001': {
-      id: '0000000001',
-      title: 'First List',
-      todos: ['First todo of first list!']
-    },
-    '0000000002': {
-      id: '0000000002',
-      title: 'Second List',
-      todos: ['First todo of second list!']
-    }
-  }))
+async function getTodos() {
+  try {
+    var resp = await fetch('http://localhost:3001/api/todolists')
+    var data = await resp.json()
+    console.log(data)
+    return data
+  } catch (err) {
+    console.log(err)
+  }
 }
+
+
+function getColor(isCompleted) {
+  if (isCompleted) {
+    return {style: {color: 'green'}}
+  } else {
+    return {style: {color: 'black'}}
+  }
+}
+
+function displayDoneIcon(isDone) {
+  if (isDone) {
+    return <DoneAllIcon />
+  }
+  return <ReceiptIcon />
+}
+
 
 export const ToDoLists = ({ style }) => {
   const [toDoLists, setToDoLists] = useState({})
   const [activeList, setActiveList] = useState()
 
   useEffect(() => {
-    getPersonalTodos()
+      getTodos()
       .then(setToDoLists)
   }, [])
 
@@ -51,15 +63,16 @@ export const ToDoLists = ({ style }) => {
             onClick={() => setActiveList(key)}
           >
             <ListItemIcon>
-              <ReceiptIcon />
+              {displayDoneIcon(toDoLists[key].isCompleted)}
             </ListItemIcon>
-            <ListItemText primary={toDoLists[key].title} />
+            <ListItemText primaryTypographyProps={getColor(toDoLists[key].isCompleted)} primary={toDoLists[key].title} />
           </ListItem>)}
         </List>
       </CardContent>
     </Card>
     {toDoLists[activeList] && <ToDoListForm
       key={activeList} // use key to make React recreate component to reset internal state
+      toDoCompleted = {{}}
       toDoList={toDoLists[activeList]}
       saveToDoList={(id, { todos }) => {
         const listToUpdate = toDoLists[id]
@@ -67,6 +80,10 @@ export const ToDoLists = ({ style }) => {
           ...toDoLists,
           [id]: { ...listToUpdate, todos }
         })
+      }}
+      updateListStatus = {() => {
+        getTodos()
+        .then(setToDoLists)
       }}
     />}
   </Fragment>
